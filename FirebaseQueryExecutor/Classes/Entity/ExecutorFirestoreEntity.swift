@@ -28,35 +28,35 @@ public struct QueryConditions: OptionSet {
     public init(rawValue: UInt) {
         self.rawValue = rawValue
     }
-    
+
     public static let and = QueryConditions(rawValue: 1 << 0)
     public static let or = QueryConditions(rawValue: 1 << 1)
-    
+
     public static let all: [QueryConditions] = [.and, .or]
 }
 
 class ExecutorFirestoreEntity: QueryExecutorProtocol {
-    
+
     @objc var db: Firestore
     var collectionString: String?
     var condition: QueryConditions = .and
-    var order: OrderTrait
-    
+    var order: OrderTrait?
+
     init() {
         db = Firestore.firestore()
     }
-    
+
     func create(collectionRef: String) {
         collectionString = collectionRef
     }
-    
+
     func composeObject(document: QueryDocumentSnapshot) -> [String : Any] {
         var doc = document.data()
         doc["id"] = document.documentID
         doc["uid"] = document.documentID
         return doc
     }
-    
+
     func orderQuery(_ query: inout Query?) {
         if let order = self.order {
             if order.isOrderSpecified {
@@ -66,9 +66,9 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
             }
         }
     }
-    
+
     func create(query: inout Query?, argTrain: TraitList) {
-        
+
         switch condition {
         case .and:
             if  let amount = argTrain?.count, amount > 1 {
@@ -78,7 +78,7 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
                             query = query?.whereField(fieldName, isEqualTo: expectedValue)
                         }
                     }
-                    
+
                 }
             }
         case .or: //TODO: pavel -Will be used little bit later
@@ -92,7 +92,7 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
         default: break
         }
     }
-    
+
     func onError(_ observe: AnyObserver<Any>?, error: Error?) {
         if let err = error {
             if let thread = observe {
@@ -100,7 +100,7 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
             }
         }
     }
-    
+
     func onError (_ single: ((SingleEvent<Any>) -> ())?, error: Error?) {
         if let err = error {
             if let thread = single {
@@ -108,14 +108,14 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
             }
         }
     }
-    
-    
+
+
 //    MARK: safety check
-    
+
     func isEmpty(document: SingleDocument) -> Bool {
         return document == "" || document == nil
     }
-    
+
     // will return false if at least single point of data will be empty.
     func isEmpty(argTrain: TraitList) -> Bool {
         if argTrain == nil {
@@ -126,16 +126,16 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
         })
         return trait != nil
     }
-    
+
     func isEmpty(nestedCollection: NestedCollection) -> Bool {
         return nestedCollection == nil ||
             (nestedCollection?.collection == "" || nestedCollection?.document == "")
     }
-    
+
     func isEmpty(collection: CollectionRef) -> Bool {
         return collection == ""
     }
-    
+
     func isEmptyUpdateableData(data: UpdateableData) -> Bool {
         if data.0 == nil {
             return true
@@ -145,24 +145,24 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
         }
         return false
     }
-    
+
     func isEmpty(uploadData: [String: Any]?) -> Bool {
         return isEmpty(snapshotData: uploadData)
     }
-    
+
     func isEmpty(snapshotData: [String:Any]?) -> Bool {
         return snapshotData == nil
     }
-    
+
     func isEmpty(snapshotDocs: [DocumentSnapshot]?) -> Bool {
-        
+
         if (snapshotDocs?.count) ?? -1 >= 0 {
             return false
         } else {
             return true
         }
     }
-    
+
     private func isEmpty(snapshotDoc: DocumentSnapshot) -> Bool {
         return isEmpty(snapshotData: snapshotDoc.data())
     }
