@@ -40,7 +40,7 @@ class ExecutorFirestoreEntity: QueryExecutorProtocol {
     @objc var db: Firestore
     var collectionString: String?
     var condition: QueryConditions = .and
-    var order: OrderTrait?
+    var order: OrderTrait
 
     init() {
         db = Firestore.firestore()
